@@ -34,7 +34,7 @@
 
 /* SETUP ENDS */
 
-const VERSION = "1.0.0"
+const VERSION = "1.0.1"
 const WORKER_SHORT_NAME = 'originator'
 const DEBUG = INSTALL_OPTIONS.debug
 const originUrl = INSTALL_OPTIONS.originUrl.trim()
@@ -147,6 +147,7 @@ async function getFromOrigin(url) {
  * Register Event Listener
  */
 addEventListener("fetch", event => {
+  event.passThroughOnException()
   if (cdnPathRegExp.test(event.request.url)) {
     debug("CDN request matched")
     const requestPath = event.request.url.replace(cdnPathRegExp, "")
