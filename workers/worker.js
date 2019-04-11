@@ -133,7 +133,13 @@ async function getFromOrigin(url) {
   const [urlRes, workerIp] = await Promise.all([fetch(urlReq), getWorkerIP()])
   debug(`Worker IP: ${workerIp}`)
   debug(`Origin Response Code: ${urlRes.status}`)
-  return urlRes
+  if (urlRes.status != 200) {
+    debug("Returning 404")
+    return new Response('This page is not found.',
+      { status: 404, statusText: 'NotFound' })
+  } else {
+    return urlRes
+  }
 }
 
 /* eslint-disable no-restricted-globals */
