@@ -42,21 +42,33 @@
         "default": false,
         "order": 1
       },
+      "getWorkerIP": {
+        "title": "Enabled retrieving Worker IP, while debug is enabled",
+        "type": "boolean",
+        "default": false,
+        "order": 2
+      },
+      "cdnCatchAll": {
+        "title": "Match request path to CDN path if no match found in pathMap",
+        "type": "boolean",
+        "default": true,
+        "order": 3
+      },
       "domain": {
         "title": "You domain name",
         "type": "string",
-        "order": 2
+        "order": 4
       },
       "subdomain": {
         "title": "Subdomain to use for your Cloudflare CDN",
         "type": "string",
         "default": "cdn",
-        "order": 3
+        "order": 5
       },
       "originBase": {
         "title": "Origin Base URL (including protocol, i.e. \"https://\")",
         "type": "string",
-        "order": 4
+        "order": 6
       },
       "pathMap": {
         "title": "Path Mappings",
@@ -82,7 +94,7 @@
             }
           }
         },
-        "order": 5
+        "order": 7
       },
       "help": {
         "type": "help",

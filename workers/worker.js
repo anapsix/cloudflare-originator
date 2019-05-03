@@ -2,12 +2,13 @@
  * This worker script allows mapping CDN to Origin arbitrary paths
  */
 
-
 /**
  * INSTALL_OPTIONS must be defined
  * For example:
  *  const INSTALL_OPTIONS = {
  *    "debug": false,
+ *    "getWorkerIP": false
+ *    "cdnCatchAll": true,
  *    "originUrl": "https://myorigin.com",
  *    "cdnDomain": "myzonedomain.com",
  *    "cdnSubDomain": "cdn",
@@ -17,7 +18,6 @@
  *    ]
  *  }
  */
-
 
 /* SETUP BEGINS */
 
@@ -31,12 +31,13 @@
  * S3 Path: https://myorigin.com/grunt_build/styles/style.css
  */
 
-
 /* SETUP ENDS */
 
-const VERSION = "1.0.1"
-const WORKER_SHORT_NAME = 'originator'
+const VERSION = "1.0.2"
+const WORKER_SHORT_NAME = "originator"
 const DEBUG = INSTALL_OPTIONS.debug
+const GET_WORKER_IP = INSTALL_OPTIONS.getWorkerIP
+const CDN_CATCH_ALL = INSTALL_OPTIONS.cdnCatchAll
 const originUrl = INSTALL_OPTIONS.originUrl.trim()
 const originHost = originUrl.replace(new RegExp("^https?://"), "")
 // eslint-disable-next-line
@@ -69,7 +70,7 @@ const cdnPathMap = INSTALL_OPTIONS.pathMap.reduce((map, obj) => {
  */
 async function debug(msg) {
   if (DEBUG) {
-    if (typeof(msg) == 'string') {
+    if (typeof msg === "string") {
       console.log(`${WORKER_SHORT_NAME} ${VERSION}: ${msg}`)
     } else {
       console.log(msg)
@@ -85,7 +86,7 @@ debug(cdnPathMap)
  * get worker IP address
  */
 async function getWorkerIP() {
-  if (DEBUG) {
+  if (DEBUG && GET_WORKER_IP) {
     const ipReq = new Request("http://icanhazip.com")
     const ipRes = await fetch(ipReq)
     return ipRes.text()
@@ -98,6 +99,7 @@ async function getWorkerIP() {
  * @params {string} path
  */
 function getOriginPath(path) {
+  /* eslint-disable no-restricted-syntax */
   for (const key of Object.keys(cdnPathMap)) {
     const cdnPR = new RegExp(`^${key}`)
     if (cdnPR.test(path)) {
@@ -105,8 +107,18 @@ function getOriginPath(path) {
       return `${cdnPathMap[key]}${pathRem}`
     }
   }
-  debug('Cannot find specific path mapping, using "/" as prefix')
-  return path
+  /* eslint-enable no-restricted-syntax */
+  if (CDN_CATCH_ALL) {
+    debug(
+      "Cannot find specific path mapping, using " /
+        " as prefix, since CDN_CATCH_ALL enabled..",
+    )
+    return path
+  }
+  debug(
+    "Cannot find specific path mapping, bypassing CDN since CDN_CATCH_ALL is disabled..",
+  )
+  return false
 }
 
 /**
@@ -133,13 +145,14 @@ async function getFromOrigin(url) {
   const [urlRes, workerIp] = await Promise.all([fetch(urlReq), getWorkerIP()])
   debug(`Worker IP: ${workerIp}`)
   debug(`Origin Response Code: ${urlRes.status}`)
-  if (urlRes.status != 200) {
+  if (urlRes.status !== 200) {
     debug("Returning 404")
-    return new Response('This page is not found.',
-      { status: 404, statusText: 'NotFound' })
-  } else {
-    return urlRes
+    return new Response("This page is not found.", {
+      status: 404,
+      statusText: "NotFound",
+    })
   }
+  return urlRes
 }
 
 /* eslint-disable no-restricted-globals */
@@ -149,13 +162,15 @@ async function getFromOrigin(url) {
 addEventListener("fetch", event => {
   event.passThroughOnException()
   if (cdnPathRegExp.test(event.request.url)) {
-    debug("CDN request matched")
+    debug("CDN request candidate found")
     const requestPath = event.request.url.replace(cdnPathRegExp, "")
     const originPath = getOriginPath(requestPath)
     debug(`CDN to Origin Mapped Path: "${requestPath}" => "${originPath}"`)
-    const originResourceUrl = `${originUrl}/${originPath}`
-    debug(`Origin URL: ${originResourceUrl}`)
-    event.respondWith(getFromOrigin(originResourceUrl))
+    if (originPath !== false) {
+      const originResourceUrl = `${originUrl}/${originPath}`
+      debug(`Origin URL: ${originResourceUrl}`)
+      event.respondWith(getFromOrigin(originResourceUrl))
+    }
   } else {
     debug("Default request matched")
     // event.respondWith(fetchAndLog(event.request))
