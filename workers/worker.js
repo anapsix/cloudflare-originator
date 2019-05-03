@@ -4,6 +4,7 @@
 
 /**
  * INSTALL_OPTIONS must be defined
+ * used by standalone worker
  * For example:
  *  const INSTALL_OPTIONS = {
  *    "debug": false,
