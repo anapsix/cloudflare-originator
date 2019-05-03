@@ -13,6 +13,8 @@ Cloudflare Origin Customizer, allowing to map Cloudflare CDN to Origin paths
 
 This Cloudflare App attempts to replicate AWS CloudFront's convenient capability of mapping path of incoming requests to a different origin path.
 
+Can be used as a standalone worker, see [`workers/worker.js`](./workers/worker.js) for details.
+
 ## Features
 
 #### Cloudflare DNS
